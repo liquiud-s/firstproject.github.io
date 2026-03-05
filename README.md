@@ -27,7 +27,3 @@ Visual Studio Code
 
 **Design Process**
 Research → Wireframe → Prototype → Web Implementation
-
-Design Process
-
-Research → Wireframe → Prototype → Web Implementation
