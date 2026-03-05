@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TaskFlow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --p1: #7C5CFC; --p2: #5B3FD9; --p3: #9B7EFF; --p4: #EEE9FF;
+      --ink: #0F0A2A; --ink2: #4B4870; --ink3: #9896B0;
+      --white: #FFFFFF; --surface: #F7F5FF; --card: #FFFFFF;
+      --success: #22C55E; --warn: #F59E0B; --danger: #EF4444;
+    }
+
+    html, body {
+      height: 100%; background: #0F0A2A;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Plus Jakarta Sans', sans-serif; padding: 24px; overflow: hidden;
+    }
+
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 20% 20%, rgba(124,92,252,0.3) 0%, transparent 60%),
+                  radial-gradient(ellipse 50% 60% at 80% 80%, rgba(91,63,217,0.2) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .phone {
+      width: 390px; height: 844px; background: var(--surface);
+      border-radius: 48px; position: relative; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(124,92,252,0.25), 0 40px 100px rgba(0,0,0,0.6), 0 0 80px rgba(124,92,252,0.2);
+    }
+
+    .island {
+      position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      width: 120px; height: 34px; background: #0a0718; border-radius: 20px; z-index: 100;
+    }
+
+    /* ── SCREENS ── */
+    .screen {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      transition: transform 0.45s cubic-bezier(0.4,0,0.2,1), opacity 0.45s ease;
+      will-change: transform, opacity;
+    }
+    .screen.active       { transform: translateX(0);     opacity: 1; pointer-events: all; }
+    .screen.hidden-left  { transform: translateX(-100%); opacity: 0; pointer-events: none; }
+    .screen.hidden-right { transform: translateX(100%);  opacity: 0; pointer-events: none; }
+    .screen.slide-up     { transform: translateY(100%);  opacity: 0; pointer-events: none; }
+    .screen.slide-up-active { transform: translateY(0);  opacity: 1; pointer-events: all;
+      transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), opacity 0.4s ease; }
+
+    /* ════════ SCREEN 1 — WELCOME ════════ */
+    #screen1 { background: #16112E; overflow: hidden; }
+    .s1-mesh { position: absolute; inset: 0; pointer-events: none;
+      background: radial-gradient(ellipse 70% 40% at 50% 0%, rgba(124,92,252,0.45) 0%, transparent 60%),
+                  radial-gradient(ellipse 40% 30% at 80% 30%, rgba(155,126,255,0.2) 0%, transparent 50%); }
+    .s1-orb {
+      position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+      width: 320px; height: 320px; border-radius: 50%; filter: blur(24px); pointer-events: none;
+      background: radial-gradient(circle, rgba(124,92,252,0.5) 0%, transparent 65%);
+    }
+    .s1-content { position: relative; z-index: 2; flex: 1; display: flex; flex-direction: column; align-items: center; padding: 76px 28px 40px; }
+    .logo-row { display: flex; align-items: center; gap: 10px; margin-bottom: 46px; animation: fadeDown 0.6s ease both; }
+    .logo-icon { width: 44px; height: 44px; background: linear-gradient(135deg, var(--p1), var(--p2)); border-radius: 14px; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(124,92,252,0.5); }
+    .logo-name { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.5px; }
+    .logo-name span { color: var(--p3); }
+    .illus-zone { width: 250px; height: 250px; position: relative; margin-bottom: 40px; animation: fadeUp 0.7s 0.1s ease both; }
+    .illus-circle { width: 210px; height: 210px; background: linear-gradient(145deg, var(--p1), var(--p2)); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 70px rgba(124,92,252,0.55), inset 0 1px 0 rgba(255,255,255,0.15); animation: pulseOrb 4s ease-in-out infinite; }
+    .illus-book { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 128px; animation: floatBook 3.5s ease-in-out infinite; }
+    .badge-float { position: absolute; background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; padding: 7px 11px; display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: white; white-space: nowrap; }
+    .badge-float.b1 { top: 8px; right: -8px; animation: bf1 3s ease-in-out infinite; }
+    .badge-float.b2 { bottom: 24px; left: -8px; animation: bf2 3.5s 0.5s ease-in-out infinite; }
+    .badge-float.b3 { bottom: 70px; right: -4px; animation: bf1 4s 1s ease-in-out infinite; }
+    .bdot { width: 8px; height: 8px; border-radius: 50%; }
+    .tag-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(124,92,252,0.2); border: 1px solid rgba(124,92,252,0.4); color: var(--p3); font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 20px; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .s1-text { text-align: center; margin-bottom: 36px; animation: fadeUp 0.7s 0.2s ease both; }
+    .s1-text h1 { font-size: 30px; font-weight: 800; color: white; line-height: 1.15; letter-spacing: -1px; margin-bottom: 10px; }
+    .s1-text h1 em { font-style: normal; background: linear-gradient(135deg, #B09FFF, var(--p3)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .s1-text p { font-size: 14px; color: rgba(255,255,255,0.5); line-height: 1.6; }
+    .s1-btns { width: 100%; display: flex; flex-direction: column; gap: 12px; animation: fadeUp 0.7s 0.3s ease both; }
+    .btn-main { width: 100%; padding: 17px; background: linear-gradient(135deg, var(--p1), var(--p2)); border: none; border-radius: 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 12px 40px rgba(124,92,252,0.5), inset 0 1px 0 rgba(255,255,255,0.2); transition: transform 0.15s, box-shadow 0.15s; }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 18px 50px rgba(124,92,252,0.65), inset 0 1px 0 rgba(255,255,255,0.2); }
+    .btn-arr { width: 28px; height: 28px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .btn-ghost { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 18px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.65); cursor: pointer; transition: all 0.15s; }
+    .btn-ghost:hover { background: rgba(255,255,255,0.1); color: white; }
+    .s1-terms { margin-top: auto; padding-top: 16px; font-size: 11px; color: rgba(255,255,255,0.3); text-align: center; line-height: 1.6; }
+    .s1-terms a { color: var(--p3); text-decoration: none; }
+
+    /* ════════ SCREEN 2 — DASHBOARD ════════ */
+    #screen2 { background: var(--surface); }
+    .s2-header { background: linear-gradient(155deg, #1A0E3F 0%, #2D1B7A 60%, #1A0E3F 100%); padding: 58px 24px 28px; position: relative; overflow: hidden; flex-shrink: 0; }
+    .s2-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(124,92,252,0.4) 0%, transparent 65%); border-radius: 50%; }
+    .s2-htop { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; position: relative; z-index: 2; }
+    .greet-chip { display: inline-flex; align-items: center; gap: 6px; background: rgba(124,92,252,0.25); border: 1px solid rgba(124,92,252,0.4); border-radius: 20px; padding: 4px 12px; font-size: 10px; font-weight: 700; color: var(--p3); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 7px; }
+    .s2-htop h2 { font-size: 21px; font-weight: 800; color: white; letter-spacing: -0.5px; }
+    .s2-htop p  { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 3px; }
+    .prof-btn { width: 46px; height: 46px; background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.15); border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; position: relative; }
+    .prof-btn:hover { background: rgba(255,255,255,0.18); }
+    .notif-dot { position: absolute; top: -3px; right: -3px; width: 10px; height: 10px; background: var(--danger); border-radius: 50%; border: 2px solid #1A0E3F; }
+    .prog-card { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 16px 20px; display: flex; align-items: center; gap: 16px; position: relative; z-index: 2; }
+    .ring-wrap { position: relative; width: 56px; height: 56px; flex-shrink: 0; }
+    .ring-wrap svg { transform: rotate(-90deg); }
+    .ring-center { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: white; }
+    .prog-info { flex: 1; }
+    .prog-info h4 { font-size: 15px; font-weight: 700; color: white; margin-bottom: 3px; }
+    .prog-info p  { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .prog-chips { display: flex; gap: 6px; margin-top: 7px; }
+    .pchip { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+    .pchip.done { background: rgba(34,197,94,0.2); color: #4ADE80; }
+    .pchip.left { background: rgba(245,158,11,0.2); color: #FCD34D; }
+    .s2-scroll { flex: 1; overflow-y: auto; padding: 18px 18px 0; display: flex; flex-direction: column; gap: 14px; }
+    .s2-scroll::-webkit-scrollbar { display: none; }
+    .sec-lbl { font-size: 11px; font-weight: 800; color: var(--ink3); text-transform: uppercase; letter-spacing: 1px; padding: 0 2px; }
+    .dl-card { background: linear-gradient(135deg, #FFF1F2, #FFE4E6); border: 1.5px solid #FECDD3; border-radius: 22px; padding: 18px; position: relative; overflow: hidden; }
+    .dl-card::before { content: ''; position: absolute; top: -20px; right: -20px; width: 100px; height: 100px; background: radial-gradient(circle, rgba(239,68,68,0.1) 0%, transparent 65%); border-radius: 50%; }
+    .dl-hdr { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .dl-badge { display: inline-flex; align-items: center; gap: 5px; background: #FEE2E2; color: #DC2626; font-size: 10px; font-weight: 800; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .dl-timer { font-size: 11px; font-weight: 700; color: #DC2626; background: #FEE2E2; padding: 4px 10px; border-radius: 10px; }
+    .dl-title { font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -0.5px; margin-bottom: 3px; }
+    .dl-course { font-size: 13px; color: #6B7280; margin-bottom: 12px; }
+    .dl-due { display: inline-flex; align-items: center; gap: 8px; background: #DC2626; color: white; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 12px; }
+    .task-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tcard { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 16px rgba(108,76,241,0.07); border: 1.5px solid #F0EEFF; cursor: pointer; transition: all 0.2s; }
+    .tcard:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(108,76,241,0.15); border-color: #C4B5FD; }
+    .tcard-icon { width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 12px; }
+    .tcard-icon.y { background: #FEF3C7; }
+    .tcard-icon.g { background: #DCFCE7; }
+    .tcard h4 { font-size: 13px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 3px; }
+    .tcard p  { font-size: 11px; color: var(--ink3); }
+    .tcard-cnt { margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--p1); background: var(--p4); display: inline-block; padding: 3px 8px; border-radius: 8px; }
+    .add-btn { background: linear-gradient(135deg, var(--p1), var(--p2)); border-radius: 20px; padding: 18px; display: flex; align-items: center; gap: 14px; cursor: pointer; border: none; width: 100%; box-shadow: 0 10px 32px rgba(124,92,252,0.4); transition: all 0.2s; }
+    .add-btn:hover { transform: translateY(-2px); box-shadow: 0 16px 42px rgba(124,92,252,0.55); }
+    .add-icon-box { width: 42px; height: 42px; background: rgba(255,255,255,0.18); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; color: white; flex-shrink: 0; }
+    .add-txt { flex: 1; text-align: left; }
+    .add-txt h4 { font-size: 15px; font-weight: 800; color: white; margin-bottom: 2px; }
+    .add-txt p  { font-size: 11px; color: rgba(255,255,255,0.6); }
+    .add-arr { width: 30px; height: 30px; background: rgba(255,255,255,0.18); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+    .stats-strip { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .stat-box { background: var(--card); border-radius: 16px; padding: 13px 10px; box-shadow: 0 2px 12px rgba(108,76,241,0.06); border: 1.5px solid #F0EEFF; text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 800; color: var(--p1); letter-spacing: -1px; line-height: 1; }
+    .stat-lbl { font-size: 10px; font-weight: 600; color: var(--ink3); margin-top: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+
+    /* ════════ BOTTOM NAV ════════ */
+    .bottom-nav { background: var(--card); padding: 12px 20px 26px; display: flex; justify-content: space-around; border-top: 1px solid #F0EEFF; flex-shrink: 0; }
+    .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; background: none; border: none; padding: 4px 12px; border-radius: 12px; transition: all 0.15s; }
+    .nav-btn.active { background: var(--p4); }
+    .nav-btn.active svg { stroke: var(--p1) !important; }
+    .nav-btn.active .nav-lbl { color: var(--p1); }
+    .nav-lbl { font-size: 10px; font-weight: 700; color: var(--ink3); font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    /* ════════ MODAL ════════ */
+    .modal-overlay { position: absolute; inset: 0; background: rgba(10,7,24,0.7); backdrop-filter: blur(6px); z-index: 200; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal-sheet { width: 100%; background: var(--card); border-radius: 28px 28px 0 0; padding: 0 0 36px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4,0,0.2,1); }
+    .modal-overlay.open .modal-sheet { transform: translateY(0); }
+    .modal-handle { width: 40px; height: 4px; background: #E0DBFF; border-radius: 2px; margin: 14px auto 0; }
+    .modal-head { display: flex; justify-content: space-between; align-items: center; padding: 18px 22px 14px; }
+    .modal-head h3 { font-size: 18px; font-weight: 800; color: var(--ink); letter-spacing: -0.5px; }
+    .close-btn { width: 34px; height: 34px; background: #F3F0FF; border: none; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; }
+    .close-btn:hover { background: var(--p4); }
+    .modal-body { padding: 0 22px; display: flex; flex-direction: column; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-label { font-size: 11px; font-weight: 800; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.5px; }
+    .form-input, .form-select { width: 100%; padding: 13px 16px; background: var(--surface); border: 1.5px solid #EDE9FF; border-radius: 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: var(--ink); outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+    .form-input:focus, .form-select:focus { border-color: var(--p1); box-shadow: 0 0 0 3px rgba(124,92,252,0.12); }
+    .form-select { appearance: none; cursor: pointer; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .urgency-row { display: flex; gap: 8px; }
+    .urg-btn { flex: 1; padding: 10px 8px; border-radius: 12px; border: 1.5px solid #EDE9FF; background: white; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; text-align: center; }
+    .urg-btn.sel-red   { background: #FEE2E2; border-color: #FECDD3; color: #DC2626; }
+    .urg-btn.sel-warn  { background: #FEF3C7; border-color: #FDE68A; color: #D97706; }
+    .urg-btn.sel-green { background: #DCFCE7; border-color: #BBF7D0; color: #15803D; }
+    .submit-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--p1), var(--p2)); border: none; border-radius: 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 15px; font-weight: 800; color: white; cursor: pointer; box-shadow: 0 8px 24px rgba(124,92,252,0.4); transition: all 0.15s; margin-top: 4px; }
+    .submit-btn:hover { transform: translateY(-1px); }
+
+    /* ════════ SCREEN 3 — TASK DETAIL ════════ */
+    #screen3 { background: var(--surface); }
+    .s3-header { background: linear-gradient(155deg, #1A0E3F 0%, #2D1B7A 60%, #1A0E3F 100%); padding: 58px 24px 26px; position: relative; overflow: hidden; flex-shrink: 0; }
+    .s3-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(124,92,252,0.35) 0%, transparent 65%); border-radius: 50%; }
+    .s3-htop { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; position: relative; z-index: 2; }
+    .back-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .back-btn:hover { background: rgba(255,255,255,0.18); }
+    .s3-htop-mid { text-align: center; }
+    .s3-htop-mid h2 { font-size: 16px; font-weight: 800; color: white; }
+    .s3-htop-mid p  { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    .srch-btn { width: 40px; height: 40px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .srch-btn:hover { background: rgba(255,255,255,0.18); }
+    .task-banner { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.15); border-radius: 18px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; }
+    .banner-left h3 { font-size: 15px; font-weight: 800; color: white; margin-bottom: 4px; }
+    .banner-left .dl-row { display: flex; align-items: center; gap: 6px; font-size: 12px; color: rgba(255,255,255,0.6); }
+    .banner-pills { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+    .dl-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(239,68,68,0.25); border: 1px solid rgba(239,68,68,0.4); color: #FCA5A5; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; }
+    .crs-pill { display: inline-flex; align-items: center; gap: 5px; background: rgba(124,92,252,0.25); border: 1px solid rgba(124,92,252,0.35); color: #C4B5FD; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 10px; }
+    .s3-scroll { flex: 1; overflow-y: auto; padding: 18px 18px 36px; display: flex; flex-direction: column; gap: 12px; }
+    .s3-scroll::-webkit-scrollbar { display: none; }
+    .filter-row { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+    .filter-row::-webkit-scrollbar { display: none; }
+    .ftab { padding: 8px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; cursor: pointer; white-space: nowrap; border: none; font-family: 'Plus Jakarta Sans', sans-serif; transition: all 0.18s; }
+    .ftab.active { background: var(--p1); color: white; box-shadow: 0 4px 14px rgba(124,92,252,0.4); }
+    .ftab:not(.active) { background: var(--card); color: var(--ink3); border: 1.5px solid #ECDEFF; }
+    .ftab:not(.active):hover { border-color: var(--p3); color: var(--p1); }
+    .sec-row { display: flex; align-items: center; justify-content: space-between; }
+    .sec-row h3 { font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; }
+    .cnt-badge { background: var(--p4); color: var(--p1); font-size: 11px; font-weight: 800; padding: 4px 12px; border-radius: 20px; }
+    .task-item { background: var(--card); border-radius: 20px; padding: 15px; box-shadow: 0 2px 16px rgba(108,76,241,0.07); border: 1.5px solid #F0EEFF; display: flex; align-items: center; gap: 11px; transition: all 0.2s; animation: slideUp 0.4s ease both; }
+    .task-item:hover { box-shadow: 0 6px 24px rgba(108,76,241,0.13); border-color: #C4B5FD; transform: translateY(-1px); }
+    .task-item.completed { background: #F0FDF4; border-color: #BBF7D0; opacity: 0.72; }
+    .task-item.completed .col-val { text-decoration: line-through; color: var(--ink3); }
+    .item-accent { width: 4px; height: 50px; border-radius: 4px; flex-shrink: 0; }
+    .a-red  { background: linear-gradient(180deg,#EF4444,#F87171); }
+    .a-warn { background: linear-gradient(180deg,#F59E0B,#FCD34D); }
+    .a-grn  { background: linear-gradient(180deg,#22C55E,#4ADE80); }
+    .a-purp { background: linear-gradient(180deg,#7C5CFC,#9B7EFF); }
+    .task-cols { flex: 1; display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+    .col-item { display: flex; flex-direction: column; gap: 3px; }
+    .col-lbl { font-size: 9px; font-weight: 800; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.5px; }
+    .col-val { font-size: 12px; font-weight: 700; color: var(--ink); }
+    .ptag { display: inline-block; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 7px; }
+    .ptag.canvas  { background: #EDE9FE; color: #7C5CFC; }
+    .ptag.moodle  { background: #FEF3C7; color: #D97706; }
+    .ptag.google  { background: #DCFCE7; color: #15803D; }
+    .ptag.notion  { background: #F3F4F6; color: #374151; }
+    .ptag.default { background: var(--p4); color: var(--p1); }
+    .vdiv { width: 1px; height: 42px; background: #EDE9FE; flex-shrink: 0; }
+    .mark-btn { flex-shrink: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; border: none; background: none; padding: 0; }
+    .mark-ring { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #C4B5FD; background: var(--p4); display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+    .mark-btn:hover .mark-ring { background: var(--p1); border-color: var(--p1); transform: scale(1.1); }
+    .mark-btn:hover .mark-ring svg { stroke: white; }
+    .mark-btn.done .mark-ring { background: #DCFCE7; border-color: #22C55E; }
+    .mark-btn.done .mark-ring svg { stroke: #22C55E; }
+    .mark-lbl { font-size: 9px; font-weight: 700; color: var(--ink3); text-align: center; max-width: 44px; line-height: 1.3; }
+    .mark-btn.done .mark-lbl { color: #22C55E; }
+    .empty-state { text-align: center; padding: 40px 20px; display: none; flex-direction: column; align-items: center; gap: 10px; }
+    .empty-state.show { display: flex; }
+    .empty-icon { font-size: 44px; }
+    .empty-state h4 { font-size: 16px; font-weight: 800; color: var(--ink); }
+    .empty-state p  { font-size: 13px; color: var(--ink3); }
+
+    /* ════════ SCREEN 4 — SEARCH ════════ */
+    #screen4 { background: var(--surface); }
+    .search-header { background: linear-gradient(155deg, #1A0E3F 0%, #2D1B7A 60%, #1A0E3F 100%); padding: 58px 24px 24px; flex-shrink: 0; position: relative; overflow: hidden; }
+    .search-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(124,92,252,0.35) 0%, transparent 65%); border-radius: 50%; }
+    .search-top { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; position: relative; z-index: 2; }
+    .search-top h2 { font-size: 20px; font-weight: 800; color: white; flex: 1; letter-spacing: -0.5px; }
+    .search-box-wrap { position: relative; z-index: 2; }
+    .search-box { width: 100%; padding: 14px 16px 14px 46px; background: rgba(255,255,255,0.1); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 500; color: white; outline: none; transition: all 0.2s; }
+    .search-box::placeholder { color: rgba(255,255,255,0.4); }
+    .search-box:focus { background: rgba(255,255,255,0.15); border-color: var(--p3); }
+    .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+    .s4-scroll { flex: 1; overflow-y: auto; padding: 18px 18px 36px; display: flex; flex-direction: column; gap: 14px; }
+    .s4-scroll::-webkit-scrollbar { display: none; }
+    .search-results-lbl { font-size: 11px; font-weight: 800; color: var(--ink3); text-transform: uppercase; letter-spacing: 1px; }
+    .no-results { text-align: center; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .no-results .icon { font-size: 44px; }
+    .no-results h4 { font-size: 16px; font-weight: 800; color: var(--ink); }
+    .no-results p  { font-size: 13px; color: var(--ink3); }
+    .search-hint { display: flex; flex-wrap: wrap; gap: 8px; }
+    .hint-chip { background: var(--card); border: 1.5px solid #ECDEFF; border-radius: 20px; padding: 7px 14px; font-size: 12px; font-weight: 700; color: var(--p1); cursor: pointer; transition: all 0.15s; }
+    .hint-chip:hover { background: var(--p4); border-color: var(--p3); }
+
+    /* ════════ SCREEN 5 — CALENDAR ════════ */
+    #screen5 { background: var(--surface); }
+    .cal-header { background: linear-gradient(155deg, #1A0E3F 0%, #2D1B7A 60%, #1A0E3F 100%); padding: 58px 24px 24px; flex-shrink: 0; position: relative; overflow: hidden; }
+    .cal-header::before { content: ''; position: absolute; top: -40px; right: -40px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(124,92,252,0.4) 0%, transparent 65%); border-radius: 50%; }
+    .cal-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; position: relative; z-index: 2; }
+    .cal-top h2 { font-size: 20px; font-weight: 800; color: white; letter-spacing: -0.5px; }
+    .cal-top p  { font-size: 12px; color: rgba(255,255,255,0.5); margin-top: 2px; }
+    .cal-nav { display: flex; align-items: center; gap: 12px; }
+    .cal-arrow { width: 32px; height: 32px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .cal-arrow:hover { background: rgba(255,255,255,0.2); }
+    .cal-month { font-size: 14px; font-weight: 800; color: white; min-width: 110px; text-align: center; }
+    .s5-scroll { flex: 1; overflow-y: auto; padding: 16px 18px 36px; display: flex; flex-direction: column; gap: 14px; }
+    .s5-scroll::-webkit-scrollbar { display: none; }
+    .cal-grid-wrap { background: var(--card); border-radius: 20px; padding: 16px; box-shadow: 0 2px 16px rgba(108,76,241,0.07); border: 1.5px solid #F0EEFF; }
+    .cal-days-row { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; margin-bottom: 8px; }
+    .cal-day-lbl { text-align: center; font-size: 10px; font-weight: 800; color: var(--ink3); text-transform: uppercase; padding: 4px 0; }
+    .cal-cells { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+    .cal-cell { aspect-ratio: 1; border-radius: 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; position: relative; font-size: 13px; font-weight: 600; color: var(--ink2); }
+    .cal-cell:hover { background: var(--p4); color: var(--p1); }
+    .cal-cell.empty { pointer-events: none; }
+    .cal-cell.today { background: var(--p1); color: white; font-weight: 800; }
+    .cal-cell.today:hover { background: var(--p2); }
+    .cal-cell.has-task::after { content: ''; position: absolute; bottom: 3px; width: 4px; height: 4px; border-radius: 50%; background: var(--p1); }
+    .cal-cell.today.has-task::after { background: white; }
+    .cal-cell.selected { background: var(--p4); color: var(--p1); border: 2px solid var(--p1); font-weight: 800; }
+    .cal-cell.selected.today { background: var(--p1); color: white; }
+    .cal-section-lbl { font-size: 11px; font-weight: 800; color: var(--ink3); text-transform: uppercase; letter-spacing: 1px; padding: 0 2px; }
+    .cal-task-item { background: var(--card); border-radius: 16px; padding: 14px 16px; border: 1.5px solid #F0EEFF; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 12px rgba(108,76,241,0.06); transition: all 0.2s; }
+    .cal-task-item:hover { border-color: #C4B5FD; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(108,76,241,0.12); }
+    .cal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .cal-task-info { flex: 1; }
+    .cal-task-info h4 { font-size: 13px; font-weight: 800; color: var(--ink); }
+    .cal-task-info p  { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+    .cal-task-date { font-size: 11px; font-weight: 700; color: var(--ink3); }
+    .no-cal-tasks { text-align: center; padding: 24px; color: var(--ink3); font-size: 13px; font-weight: 600; }
+
+    /* ════════ SCREEN 6 — PROFILE ════════ */
+    #screen6 { background: var(--surface); }
+    .prof-header { background: linear-gradient(155deg, #1A0E3F 0%, #2D1B7A 60%, #1A0E3F 100%); padding: 58px 24px 32px; flex-shrink: 0; position: relative; overflow: hidden; text-align: center; }
+    .prof-header::before { content: ''; position: absolute; top: -60px; left: 50%; transform: translateX(-50%); width: 260px; height: 260px; background: radial-gradient(circle, rgba(124,92,252,0.4) 0%, transparent 65%); border-radius: 50%; }
+    .prof-avatar-wrap { position: relative; z-index: 2; display: inline-block; margin-bottom: 14px; }
+    .prof-avatar { width: 80px; height: 80px; background: linear-gradient(135deg, var(--p1), var(--p2)); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto; box-shadow: 0 8px 28px rgba(124,92,252,0.5); font-size: 32px; }
+    .prof-edit-btn { position: absolute; bottom: 0; right: 0; width: 26px; height: 26px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2); border: none; transition: all 0.15s; }
+    .prof-edit-btn:hover { transform: scale(1.1); }
+    .prof-name { font-size: 22px; font-weight: 800; color: white; letter-spacing: -0.5px; position: relative; z-index: 2; }
+    .prof-email { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; position: relative; z-index: 2; }
+    .prof-chips { display: flex; justify-content: center; gap: 8px; margin-top: 14px; position: relative; z-index: 2; }
+    .prof-chip { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; padding: 5px 14px; font-size: 11px; font-weight: 700; color: white; }
+    .s6-scroll { flex: 1; overflow-y: auto; padding: 20px 18px 36px; display: flex; flex-direction: column; gap: 14px; }
+    .s6-scroll::-webkit-scrollbar { display: none; }
+    .prof-stats-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; }
+    .prof-stat { background: var(--card); border-radius: 16px; padding: 14px 10px; text-align: center; border: 1.5px solid #F0EEFF; box-shadow: 0 2px 12px rgba(108,76,241,0.06); }
+    .prof-stat-num { font-size: 24px; font-weight: 800; color: var(--p1); }
+    .prof-stat-lbl { font-size: 10px; font-weight: 600; color: var(--ink3); text-transform: uppercase; letter-spacing: 0.3px; margin-top: 3px; }
+    .section-title { font-size: 13px; font-weight: 800; color: var(--ink2); text-transform: uppercase; letter-spacing: 0.8px; padding: 0 2px; }
+    .menu-list { background: var(--card); border-radius: 20px; border: 1.5px solid #F0EEFF; overflow: hidden; box-shadow: 0 2px 16px rgba(108,76,241,0.06); }
+    .menu-item { display: flex; align-items: center; gap: 14px; padding: 16px 18px; cursor: pointer; transition: background 0.15s; border-bottom: 1px solid #F7F5FF; }
+    .menu-item:last-child { border-bottom: none; }
+    .menu-item:hover { background: var(--surface); }
+    .menu-icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .menu-icon.purple { background: var(--p4); }
+    .menu-icon.green  { background: #DCFCE7; }
+    .menu-icon.blue   { background: #DBEAFE; }
+    .menu-icon.orange { background: #FEF3C7; }
+    .menu-icon.red    { background: #FEE2E2; }
+    .menu-text { flex: 1; }
+    .menu-text h4 { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .menu-text p  { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+    .menu-arrow { color: var(--ink3); }
+    .logout-btn { width: 100%; padding: 16px; background: #FEE2E2; border: none; border-radius: 16px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800; color: #DC2626; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .logout-btn:hover { background: #FECDD3; }
+
+    /* Edit Name Modal */
+    .edit-modal { position: absolute; inset: 0; background: rgba(10,7,24,0.7); backdrop-filter: blur(6px); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 24px; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+    .edit-modal.open { opacity: 1; pointer-events: all; }
+    .edit-card { background: white; border-radius: 24px; padding: 28px 24px; width: 100%; transform: scale(0.95); transition: transform 0.3s; }
+    .edit-modal.open .edit-card { transform: scale(1); }
+    .edit-card h3 { font-size: 18px; font-weight: 800; color: var(--ink); margin-bottom: 6px; }
+    .edit-card p  { font-size: 13px; color: var(--ink3); margin-bottom: 20px; }
+    .edit-actions { display: flex; gap: 10px; margin-top: 16px; }
+    .edit-cancel { flex: 1; padding: 13px; background: var(--surface); border: 1.5px solid #EDE9FF; border-radius: 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 700; color: var(--ink3); cursor: pointer; transition: all 0.15s; }
+    .edit-cancel:hover { border-color: var(--p3); color: var(--p1); }
+    .edit-save { flex: 1; padding: 13px; background: linear-gradient(135deg, var(--p1), var(--p2)); border: none; border-radius: 14px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 14px; font-weight: 800; color: white; cursor: pointer; transition: all 0.15s; }
+    .edit-save:hover { transform: translateY(-1px); }
+
+    /* ════════ TOAST ════════ */
+    .toast { position: absolute; bottom: 100px; left: 50%; transform: translateX(-50%) translateY(10px); background: #0F0A2A; color: white; font-size: 13px; font-weight: 700; padding: 11px 20px; border-radius: 16px; display: flex; align-items: center; gap: 8px; box-shadow: 0 8px 30px rgba(0,0,0,0.4); border: 1px solid rgba(124,92,252,0.3); z-index: 300; opacity: 0; transition: opacity 0.3s, transform 0.3s; white-space: nowrap; font-family: 'Plus Jakarta Sans', sans-serif; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ════════ ANIMATIONS ════════ */
+    @keyframes fadeDown { from{opacity:0;transform:translateY(-14px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeUp   { from{opacity:0;transform:translateY(18px)}  to{opacity:1;transform:translateY(0)} }
+    @keyframes pulseOrb { 0%,100%{box-shadow:0 0 60px rgba(124,92,252,0.5),inset 0 1px 0 rgba(255,255,255,0.15)} 50%{box-shadow:0 0 95px rgba(124,92,252,0.75),inset 0 1px 0 rgba(255,255,255,0.15)} }
+    @keyframes floatBook{ 0%,100%{transform:translate(-50%,-50%) translateY(0)} 50%{transform:translate(-50%,-50%) translateY(-8px)} }
+    @keyframes bf1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+    @keyframes bf2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(5px)} }
+    @keyframes slideUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+  </style>
+</head>
+<body>
+<div class="phone">
+  <div class="island"></div>
+
+  <!-- ══════════ SCREEN 1 — WELCOME ══════════ -->
+  <div class="screen active" id="screen1">
+    <div class="s1-mesh"></div><div class="s1-orb"></div>
+    <div class="s1-content">
+      <div class="logo-row">
+        <div class="logo-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <rect x="4" y="3" width="13" height="17" rx="2" fill="rgba(255,255,255,0.3)"/>
+            <rect x="6" y="3" width="13" height="17" rx="2" fill="white"/>
+            <circle cx="9" cy="9" r="1.2" fill="#7C5CFC"/><circle cx="9" cy="13" r="1.2" fill="#9B7EFF"/><circle cx="9" cy="17" r="1.2" fill="#C4B5FD"/>
+            <line x1="12" y1="9" x2="17" y2="9" stroke="#7C5CFC" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="12" y1="13" x2="17" y2="13" stroke="#9B7EFF" stroke-width="1.4" stroke-linecap="round"/>
+            <line x1="12" y1="17" x2="15" y2="17" stroke="#C4B5FD" stroke-width="1.4" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="logo-name">Task<span>Flow</span></div>
+      </div>
+      <div class="illus-zone">
+        <div class="illus-circle"></div>
+        <svg class="illus-book" viewBox="0 0 128 140" fill="none">
+          <rect x="24" y="16" width="78" height="96" rx="5" fill="rgba(255,255,255,0.15)" transform="rotate(7 24 16)"/>
+          <rect x="20" y="12" width="80" height="98" rx="5" fill="white"/>
+          <rect x="20" y="12" width="10" height="98" rx="3" fill="#EEE9FF"/>
+          <rect x="38" y="28" width="10" height="10" rx="2.5" fill="#7C5CFC"/>
+          <polyline points="40,33 42.5,35.5 46.5,30" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="54" y="30" width="32" height="5.5" rx="2.8" fill="#7C5CFC" opacity="0.7"/>
+          <rect x="38" y="46" width="10" height="10" rx="2.5" fill="#7C5CFC"/>
+          <polyline points="40,51 42.5,53.5 46.5,48" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="54" y="48" width="24" height="5.5" rx="2.8" fill="#9B7EFF" opacity="0.5"/>
+          <rect x="38" y="64" width="10" height="10" rx="2.5" fill="#EEE9FF" stroke="#7C5CFC" stroke-width="1.5"/>
+          <rect x="54" y="66" width="36" height="5.5" rx="2.8" fill="#C4B5FD" opacity="0.45"/>
+          <rect x="38" y="82" width="10" height="10" rx="2.5" fill="#EEE9FF" stroke="#7C5CFC" stroke-width="1.5"/>
+          <rect x="54" y="84" width="20" height="5.5" rx="2.8" fill="#C4B5FD" opacity="0.35"/>
+          <rect x="96" y="58" width="9" height="34" rx="2" fill="#FCD34D" transform="rotate(20 96 58)"/>
+          <rect x="96" y="90" width="9" height="7" rx="1" fill="#F97316" transform="rotate(20 96 58)"/>
+          <polygon points="96,97 105,97 100.5,108" fill="#F97316" transform="rotate(20 96 58)"/>
+          <rect x="96" y="56" width="9" height="5" rx="1.5" fill="#9CA3AF" transform="rotate(20 96 58)"/>
+          <circle cx="16" cy="26" r="3" fill="#FCD34D"/><circle cx="106" cy="18" r="2" fill="#A78BFA"/><circle cx="12" cy="88" r="2" fill="#C4B5FD"/>
+        </svg>
+        <div class="badge-float b1"><div class="bdot" style="background:#22C55E"></div>3 Done Today</div>
+        <div class="badge-float b2">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="#F59E0B" stroke-width="1.5"/><path d="M6 3.5V6.5L8 8" stroke="#F59E0B" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Due Tomorrow
+        </div>
+        <div class="badge-float b3">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5H11L8 6.5L9 10L6 8L3 10L4 6.5L1 4.5H4.5L6 1Z" fill="#FCD34D"/></svg>
+          On Track!
+        </div>
+      </div>
+      <div class="s1-text">
+        <div class="tag-chip">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="#9B7EFF" stroke-width="1.2"/><path d="M3.5 5L4.5 6L6.5 4" stroke="#9B7EFF" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Student Productivity
+        </div>
+        <h1>Welcome to<br/><em>TaskFlow</em></h1>
+        <p>Manage your tasks easily.<br/>Never miss a deadline again.</p>
+      </div>
+      <div class="s1-btns">
+        <button class="btn-main" onclick="goTo(2)">
+          Start Managing Tasks
+          <div class="btn-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="7" x2="11" y2="7"/><polyline points="7,3 11,7 7,11"/></svg></div>
+        </button>
+        <button class="btn-ghost" onclick="goTo(2)">Already Have Tasks? Continue →</button>
+      </div>
+      <p class="s1-terms">By continuing, you agree to TaskFlow's<br/><a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></p>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 2 — DASHBOARD ══════════ -->
+  <div class="screen hidden-right" id="screen2">
+    <div class="s2-header">
+      <div class="s2-htop">
+        <div>
+          <div class="greet-chip"><svg width="7" height="7"><circle cx="3.5" cy="3.5" r="3" fill="#9B7EFF"/></svg> Good Morning</div>
+          <h2>Hey There! 😊</h2>
+          <p>Stay Productive Today</p>
+        </div>
+        <div class="prof-btn" onclick="goToOverlay(6)">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="7.5" r="3.5"/><path d="M4 19c0-3.9 3.1-7 7-7s7 3.1 7 7"/></svg>
+          <div class="notif-dot"></div>
+        </div>
+      </div>
+      <div class="prog-card">
+        <div class="ring-wrap">
+          <svg width="56" height="56">
+            <circle cx="28" cy="28" r="22" stroke="rgba(255,255,255,0.1)" stroke-width="5" fill="none"/>
+            <circle cx="28" cy="28" r="22" stroke="#7C5CFC" stroke-width="5" fill="none" stroke-dasharray="138" stroke-dashoffset="46" stroke-linecap="round" id="progressRing"/>
+          </svg>
+          <div class="ring-center" id="progressPct">0%</div>
+        </div>
+        <div class="prog-info">
+          <h4>Weekly Progress</h4>
+          <p>You're on a great track!</p>
+          <div class="prog-chips">
+            <span class="pchip done" id="doneChip">✓ 0 Done</span>
+            <span class="pchip left" id="leftChip">⏳ 0 Left</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="s2-scroll">
+      <div class="stats-strip">
+        <div class="stat-box"><div class="stat-num" id="todayCount">0</div><div class="stat-lbl">Urgent</div></div>
+        <div class="stat-box"><div class="stat-num" id="upcomingCount">0</div><div class="stat-lbl">Upcoming</div></div>
+        <div class="stat-box"><div class="stat-num" id="completedCount">0</div><div class="stat-lbl">Done</div></div>
+      </div>
+      <p class="sec-lbl">🚨 Urgent</p>
+      <div class="dl-card">
+        <div class="dl-hdr"><div class="dl-badge">⚠ Deadline Alert</div><div class="dl-timer">6h left</div></div>
+        <div class="dl-title">Essay Draft</div>
+        <div class="dl-course">📚 Course: Academic Writing</div>
+        <div class="dl-due"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round"><circle cx="7" cy="7" r="5.5"/><path d="M7 4V7.5L9.5 9"/></svg>Due Today · 6:00 PM</div>
+      </div>
+      <p class="sec-lbl">Your Tasks</p>
+      <div class="task-grid">
+        <div class="tcard" onclick="goTo(3)">
+          <div class="tcard-icon y">🟡</div>
+          <h4>Due Tomorrow</h4><p>Review pending</p>
+          <div class="tcard-cnt" id="dueTomorrowCnt">0 tasks</div>
+        </div>
+        <div class="tcard" onclick="goTo(3)">
+          <div class="tcard-icon g">🟢</div>
+          <h4>Upcoming</h4><p>This week</p>
+          <div class="tcard-cnt" id="upcomingCardCnt">0 tasks</div>
+        </div>
+      </div>
+      <button class="add-btn" onclick="openModal()">
+        <div class="add-icon-box">+</div>
+        <div class="add-txt"><h4>Add New Task</h4><p>Track a new deadline</p></div>
+        <div class="add-arr"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="7" x2="11" y2="7"/><polyline points="7,3 11,7 7,11"/></svg></div>
+      </button>
+      <div style="height:10px"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" id="nav2-home"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><path d="M3 9L10 3L17 9V17H13V13H7V17H3V9Z"/></svg><span class="nav-lbl">Home</span></button>
+      <button class="nav-btn" onclick="goTo(3)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="3"/><line x1="7" y1="9" x2="13" y2="9"/><line x1="7" y1="12" x2="11" y2="12"/></svg><span class="nav-lbl">Tasks</span></button>
+      <button class="nav-btn" onclick="goToOverlay(5)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="3" y1="9" x2="17" y2="9"/></svg><span class="nav-lbl">Calendar</span></button>
+      <button class="nav-btn" onclick="goToOverlay(6)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg><span class="nav-lbl">Profile</span></button>
+    </div>
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modalOverlay" onclick="handleOverlayClick(event)">
+      <div class="modal-sheet">
+        <div class="modal-handle"></div>
+        <div class="modal-head">
+          <h3>✏️ Add New Task</h3>
+          <button class="close-btn" onclick="closeModal()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#4B4870" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg></button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group"><label class="form-label">Task Name *</label><input class="form-input" id="inp-task" type="text" placeholder="e.g. Essay Draft, Quiz Review…"/></div>
+          <div class="form-group"><label class="form-label">Course / Subject</label><input class="form-input" id="inp-course" type="text" placeholder="e.g. Academic Writing"/></div>
+          <div class="form-row">
+            <div class="form-group"><label class="form-label">Due Date *</label><input class="form-input" id="inp-date" type="date"/></div>
+            <div class="form-group"><label class="form-label">Platform</label>
+              <select class="form-select" id="inp-platform">
+                <option value="canvas">Canvas</option><option value="moodle">Moodle</option><option value="google">Google</option><option value="notion">Notion</option><option value="default">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Priority</label>
+            <div class="urgency-row">
+              <button class="urg-btn sel-red" id="urg-red" onclick="setUrgency('red')">🔴 Urgent</button>
+              <button class="urg-btn" id="urg-warn" onclick="setUrgency('warn')">🟡 Soon</button>
+              <button class="urg-btn" id="urg-green" onclick="setUrgency('green')">🟢 Upcoming</button>
+            </div>
+          </div>
+          <button class="submit-btn" onclick="submitTask()">Save Task →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 3 — TASK DETAIL ══════════ -->
+  <div class="screen hidden-right" id="screen3">
+    <div class="s3-header">
+      <div class="s3-htop">
+        <button class="back-btn" onclick="goTo(2)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11,4 6,9 11,14"/></svg></button>
+        <div class="s3-htop-mid"><h2>Hey There! 😊</h2><p>Stay Productive Today</p></div>
+        <button class="srch-btn" onclick="goToOverlay(4)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2" stroke-linecap="round"><circle cx="8" cy="8" r="5.5"/><line x1="12.5" y1="12.5" x2="16" y2="16"/></svg></button>
+      </div>
+      <div class="task-banner">
+        <div class="banner-left"><h3>Academic Writing</h3><div class="dl-row"><svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="1.5" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><path d="M6 3.5V6.5L8 8"/></svg>March 20 · 6:00 PM</div></div>
+        <div class="banner-pills"><div class="dl-pill">🔴 Due Today</div><div class="crs-pill">📖 Essay</div></div>
+      </div>
+    </div>
+    <div class="s3-scroll">
+      <div class="filter-row">
+        <button class="ftab active" onclick="setFilter(this,'all')">All</button>
+        <button class="ftab" onclick="setFilter(this,'pending')">Pending</button>
+        <button class="ftab" onclick="setFilter(this,'done')">Completed</button>
+      </div>
+      <div class="sec-row"><h3>All Tasks</h3><span class="cnt-badge" id="detailCount">0 Tasks</span></div>
+      <div id="taskList"></div>
+      <div class="empty-state" id="emptyState"><div class="empty-icon">📭</div><h4>No tasks here yet</h4><p>Go back and add your first task!</p></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="goTo(2)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><path d="M3 9L10 3L17 9V17H13V13H7V17H3V9Z"/></svg><span class="nav-lbl">Home</span></button>
+      <button class="nav-btn active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="3"/><line x1="7" y1="9" x2="13" y2="9"/><line x1="7" y1="12" x2="11" y2="12"/></svg><span class="nav-lbl">Tasks</span></button>
+      <button class="nav-btn" onclick="goToOverlay(5)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="3" y1="9" x2="17" y2="9"/></svg><span class="nav-lbl">Calendar</span></button>
+      <button class="nav-btn" onclick="goToOverlay(6)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg><span class="nav-lbl">Profile</span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 4 — SEARCH ══════════ -->
+  <div class="screen slide-up" id="screen4">
+    <div class="search-header">
+      <div class="search-top">
+        <button class="back-btn" onclick="closeOverlay(4)"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11,4 6,9 11,14"/></svg></button>
+        <h2>Search Tasks</h2>
+      </div>
+      <div class="search-box-wrap">
+        <div class="search-icon"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"/><line x1="10.5" y1="10.5" x2="14" y2="14"/></svg></div>
+        <input class="search-box" id="searchInput" type="text" placeholder="Search tasks, courses…" oninput="doSearch(this.value)"/>
+      </div>
+    </div>
+    <div class="s4-scroll">
+      <div id="searchResults">
+        <p class="search-results-lbl" style="margin-bottom:12px">Quick Filters</p>
+        <div class="search-hint">
+          <span class="hint-chip" onclick="doSearch('urgent'); document.getElementById('searchInput').value='urgent'">🔴 Urgent</span>
+          <span class="hint-chip" onclick="doSearch('soon'); document.getElementById('searchInput').value='soon'">🟡 Due Soon</span>
+          <span class="hint-chip" onclick="doSearch('canvas'); document.getElementById('searchInput').value='canvas'">Canvas</span>
+          <span class="hint-chip" onclick="doSearch('moodle'); document.getElementById('searchInput').value='moodle'">Moodle</span>
+          <span class="hint-chip" onclick="doSearch('done'); document.getElementById('searchInput').value='done'">✅ Completed</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 5 — CALENDAR ══════════ -->
+  <div class="screen slide-up" id="screen5">
+    <div class="cal-header">
+      <div class="cal-top">
+        <div>
+          <h2 id="calMonthTitle">March 2025</h2>
+          <p>Your task schedule</p>
+        </div>
+        <div class="cal-nav">
+          <button class="cal-arrow" onclick="changeMonth(-1)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9,3 5,7 9,11"/></svg></button>
+          <div class="cal-month" id="calMonthLabel">Mar 2025</div>
+          <button class="cal-arrow" onclick="changeMonth(1)"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="5,3 9,7 5,11"/></svg></button>
+        </div>
+      </div>
+    </div>
+    <div class="s5-scroll">
+      <div class="cal-grid-wrap">
+        <div class="cal-days-row">
+          <div class="cal-day-lbl">Sun</div><div class="cal-day-lbl">Mon</div><div class="cal-day-lbl">Tue</div>
+          <div class="cal-day-lbl">Wed</div><div class="cal-day-lbl">Thu</div><div class="cal-day-lbl">Fri</div><div class="cal-day-lbl">Sat</div>
+        </div>
+        <div class="cal-cells" id="calCells"></div>
+      </div>
+      <p class="cal-section-lbl" id="calTasksLabel">Tasks this month</p>
+      <div id="calTaskList"></div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="closeOverlay(5); goTo(2)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><path d="M3 9L10 3L17 9V17H13V13H7V17H3V9Z"/></svg><span class="nav-lbl">Home</span></button>
+      <button class="nav-btn" onclick="closeOverlay(5); goTo(3)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="3"/><line x1="7" y1="9" x2="13" y2="9"/><line x1="7" y1="12" x2="11" y2="12"/></svg><span class="nav-lbl">Tasks</span></button>
+      <button class="nav-btn active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="3" y1="9" x2="17" y2="9"/></svg><span class="nav-lbl">Calendar</span></button>
+      <button class="nav-btn" onclick="closeOverlay(5); goToOverlay(6)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg><span class="nav-lbl">Profile</span></button>
+    </div>
+  </div>
+
+  <!-- ══════════ SCREEN 6 — PROFILE ══════════ -->
+  <div class="screen slide-up" id="screen6">
+    <div class="prof-header">
+      <div class="prof-avatar-wrap">
+        <div class="prof-avatar">🎓</div>
+        <button class="prof-edit-btn" onclick="openEditModal()">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="#7C5CFC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 1.5L10.5 3.5L4 10H2V8L8.5 1.5Z"/></svg>
+        </button>
+      </div>
+      <div class="prof-name" id="profName">Alex Johnson</div>
+      <div class="prof-email" id="profEmail">alex.johnson@student.edu</div>
+      <div class="prof-chips">
+        <span class="prof-chip">📚 Student</span>
+        <span class="prof-chip">🏫 University</span>
+      </div>
+    </div>
+    <div class="s6-scroll">
+      <div class="prof-stats-grid">
+        <div class="prof-stat"><div class="prof-stat-num" id="p-total">0</div><div class="prof-stat-lbl">Total</div></div>
+        <div class="prof-stat"><div class="prof-stat-num" id="p-done">0</div><div class="prof-stat-lbl">Done</div></div>
+        <div class="prof-stat"><div class="prof-stat-num" id="p-streak">5</div><div class="prof-stat-lbl">Day Streak</div></div>
+      </div>
+      <p class="section-title">Account</p>
+      <div class="menu-list">
+        <div class="menu-item" onclick="openEditModal()">
+          <div class="menu-icon purple"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7C5CFC" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L15 4L6 13H4V11L13 2Z"/></svg></div>
+          <div class="menu-text"><h4>Edit Profile</h4><p>Update your name & email</p></div>
+          <div class="menu-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 10,8 6,12"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="menu-icon blue"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#3B82F6" stroke-width="1.8" stroke-linecap="round"><path d="M9 2C9 2 4 5 4 9.5C4 12 6 14 9 14C12 14 14 12 14 9.5C14 5 9 2 9 2Z"/><circle cx="9" cy="9" r="2"/></svg></div>
+          <div class="menu-text"><h4>Notifications</h4><p>Deadline reminders</p></div>
+          <div class="menu-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 10,8 6,12"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="menu-icon green"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#22C55E" stroke-width="1.8" stroke-linecap="round"><polyline points="4,9 7.5,12.5 14,6"/></svg></div>
+          <div class="menu-text"><h4>Completed Tasks</h4><p>View your history</p></div>
+          <div class="menu-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 10,8 6,12"/></svg></div>
+        </div>
+      </div>
+      <p class="section-title">Preferences</p>
+      <div class="menu-list">
+        <div class="menu-item">
+          <div class="menu-icon orange"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="3"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="9" y1="14" x2="9" y2="16"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="14" y1="9" x2="16" y2="9"/></svg></div>
+          <div class="menu-text"><h4>Appearance</h4><p>Theme & display</p></div>
+          <div class="menu-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 10,8 6,12"/></svg></div>
+        </div>
+        <div class="menu-item">
+          <div class="menu-icon purple"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#7C5CFC" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="12" height="12" rx="3"/><line x1="6" y1="9" x2="12" y2="9"/><line x1="9" y1="6" x2="9" y2="12"/></svg></div>
+          <div class="menu-text"><h4>Privacy & Data</h4><p>Manage your data</p></div>
+          <div class="menu-arrow"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6,4 10,8 6,12"/></svg></div>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="showToast('👋 Logged out!'); setTimeout(()=>{ closeOverlay(6); goTo(1); }, 800)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2H3C2.4 2 2 2.4 2 3V13C2 13.6 2.4 14 3 14H6"/><polyline points="11,11 14,8 11,5"/><line x1="14" y1="8" x2="6" y2="8"/></svg>
+        Log Out
+      </button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="closeOverlay(6); goTo(2)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><path d="M3 9L10 3L17 9V17H13V13H7V17H3V9Z"/></svg><span class="nav-lbl">Home</span></button>
+      <button class="nav-btn" onclick="closeOverlay(6); goTo(3)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="14" height="14" rx="3"/><line x1="7" y1="9" x2="13" y2="9"/><line x1="7" y1="12" x2="11" y2="12"/></svg><span class="nav-lbl">Tasks</span></button>
+      <button class="nav-btn" onclick="closeOverlay(6); goToOverlay(5)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="14" height="13" rx="2"/><line x1="7" y1="2" x2="7" y2="6"/><line x1="13" y1="2" x2="13" y2="6"/><line x1="3" y1="9" x2="17" y2="9"/></svg><span class="nav-lbl">Calendar</span></button>
+      <button class="nav-btn active"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="#9896B0" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="8" r="3.5"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg><span class="nav-lbl">Profile</span></button>
+    </div>
+    <!-- Edit Profile Modal -->
+    <div class="edit-modal" id="editModal" onclick="if(event.target===this)closeEditModal()">
+      <div class="edit-card">
+        <h3>✏️ Edit Profile</h3>
+        <p>Update your display name and email</p>
+        <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" id="edit-name" type="text" placeholder="Your full name"/></div>
+        <div class="form-group" style="margin-top:10px"><label class="form-label">Email</label><input class="form-input" id="edit-email" type="email" placeholder="your@email.com"/></div>
+        <div class="edit-actions">
+          <button class="edit-cancel" onclick="closeEditModal()">Cancel</button>
+          <button class="edit-save" onclick="saveProfile()">Save Changes</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  // ── STATE ──
+  let currentScreen = 1;
+  let tasks = [
+    { id:1, name:'Essay Draft',  course:'Academic Writing', date:'Mar 20', platform:'canvas', urgency:'red',  done:false },
+    { id:2, name:'Quiz Review',  course:'Statistics',       date:'Mar 21', platform:'moodle', urgency:'warn', done:false },
+    { id:3, name:'Lab Report',   course:'Chemistry',        date:'Mar 22', platform:'google', urgency:'green',done:false },
+    { id:4, name:'Presentation', course:'Business Comm',    date:'Mar 23', platform:'notion', urgency:'warn', done:false },
+  ];
+  let selectedUrgency = 'red';
+  let currentFilter   = 'all';
+  let nextId = 5;
+  let calYear, calMonth, selectedCalDay = null;
+  const now = new Date();
+  calYear  = now.getFullYear();
+  calMonth = now.getMonth();
+
+  // ── NAVIGATION (slide left/right) ──
+  function goTo(n) {
+    const from = document.getElementById('screen' + currentScreen);
+    const to   = document.getElementById('screen' + n);
+    // only slide left/right for screens 1-3
+    if (n > currentScreen) { from.className='screen hidden-left';  to.className='screen active'; }
+    else                    { from.className='screen hidden-right'; to.className='screen active'; }
+    currentScreen = n;
+    if (n===2) updateDashboard();
+    if (n===3) renderTasks();
+  }
+
+  // ── OVERLAY NAVIGATION (slide up from bottom) for screens 4,5,6 ──
+  function goToOverlay(n) {
+    const el = document.getElementById('screen' + n);
+    el.className = 'screen slide-up-active';
+    if (n===5) renderCalendar();
+    if (n===6) updateProfile();
+    if (n===4) { document.getElementById('searchInput').value=''; doSearch(''); }
+  }
+
+  function closeOverlay(n) {
+    const el = document.getElementById('screen' + n);
+    el.className = 'screen slide-up';
+  }
+
+  // ── MODAL ──
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('inp-date').value = new Date().toISOString().split('T')[0];
+  }
+  function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+  function handleOverlayClick(e) { if (e.target===document.getElementById('modalOverlay')) closeModal(); }
+
+  function setUrgency(u) {
+    selectedUrgency = u;
+    document.getElementById('urg-red').className   = 'urg-btn' + (u==='red'  ? ' sel-red'  : '');
+    document.getElementById('urg-warn').className  = 'urg-btn' + (u==='warn' ? ' sel-warn' : '');
+    document.getElementById('urg-green').className = 'urg-btn' + (u==='green'? ' sel-green': '');
+  }
+
+  function submitTask() {
+    const name     = document.getElementById('inp-task').value.trim();
+    const course   = document.getElementById('inp-course').value.trim() || 'General';
+    const rawDate  = document.getElementById('inp-date').value;
+    const platform = document.getElementById('inp-platform').value;
+    if (!name)    { showToast('⚠️ Please enter a task name!'); return; }
+    if (!rawDate) { showToast('⚠️ Please pick a due date!');  return; }
+    const d = new Date(rawDate + 'T00:00:00');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const dateLabel = months[d.getMonth()] + ' ' + d.getDate();
+    tasks.push({ id:nextId++, name, course, date:dateLabel, platform, urgency:selectedUrgency, done:false });
+    document.getElementById('inp-task').value='';
+    document.getElementById('inp-course').value='';
+    document.getElementById('inp-date').value='';
+    document.getElementById('inp-platform').value='canvas';
+    setUrgency('red');
+    closeModal();
+    updateDashboard();
+    showToast('✅ "' + name + '" added!');
+  }
+
+  // ── DASHBOARD ──
+  function updateDashboard() {
+    const done     = tasks.filter(t=>t.done).length;
+    const total    = tasks.length;
+    const urgent   = tasks.filter(t=>!t.done && t.urgency==='red').length;
+    const soon     = tasks.filter(t=>!t.done && t.urgency==='warn').length;
+    const upcoming = tasks.filter(t=>!t.done && t.urgency==='green').length;
+    document.getElementById('todayCount').textContent     = urgent;
+    document.getElementById('upcomingCount').textContent  = upcoming+soon;
+    document.getElementById('completedCount').textContent = done;
+    document.getElementById('dueTomorrowCnt').textContent  = soon+' task'+(soon!==1?'s':'');
+    document.getElementById('upcomingCardCnt').textContent = upcoming+' task'+(upcoming!==1?'s':'');
+    const pct = total===0 ? 0 : Math.round((done/total)*100);
+    document.getElementById('progressPct').textContent = pct+'%';
+    document.getElementById('doneChip').textContent    = '✓ '+done+' Done';
+    document.getElementById('leftChip').textContent    = '⏳ '+(total-done)+' Left';
+    const offset = 138 - (138*pct/100);
+    const ring = document.getElementById('progressRing');
+    if (ring) ring.setAttribute('stroke-dashoffset', offset);
+  }
+
+  // ── TASK LIST ──
+  function renderTasks() {
+    let filtered = tasks;
+    if (currentFilter==='pending') filtered = tasks.filter(t=>!t.done);
+    if (currentFilter==='done')    filtered = tasks.filter(t=>t.done);
+    const list  = document.getElementById('taskList');
+    const empty = document.getElementById('emptyState');
+    const cnt   = document.getElementById('detailCount');
+    cnt.textContent = filtered.length+' Task'+(filtered.length!==1?'s':'');
+    if (filtered.length===0) { list.innerHTML=''; empty.classList.add('show'); return; }
+    empty.classList.remove('show');
+    const accentMap   = {red:'a-red',warn:'a-warn',green:'a-grn'};
+    const platformMap = {canvas:'Canvas',moodle:'Moodle',google:'Google',notion:'Notion',default:'Other'};
+    list.innerHTML = filtered.map((t,i)=>`
+      <div class="task-item ${t.done?'completed':''}" id="ti-${t.id}" style="animation-delay:${i*0.06}s">
+        <div class="item-accent ${accentMap[t.urgency]||'a-purp'}"></div>
+        <div class="task-cols">
+          <div class="col-item"><span class="col-lbl">Date</span><span class="col-val">${t.date}</span></div>
+          <div class="col-item"><span class="col-lbl">Summary</span><span class="col-val">${t.name}</span></div>
+          <div class="col-item"><span class="col-lbl">Platform</span><span class="col-val"><span class="ptag ${t.platform}">${platformMap[t.platform]||'Other'}</span></span></div>
+        </div>
+        <div class="vdiv"></div>
+        <button class="mark-btn ${t.done?'done':''}" onclick="toggleTask(${t.id})">
+          <div class="mark-ring"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="${t.done?'#22C55E':'#7C5CFC'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,8 6.5,11.5 13,5"/></svg></div>
+          <span class="mark-lbl">${t.done?'Done ✓':'Mark done'}</span>
+        </button>
+      </div>`).join('');
+  }
+
+  function toggleTask(id) {
+    const t = tasks.find(x=>x.id===id);
+    if (!t) return;
+    t.done = !t.done;
+    showToast(t.done?'✅ Task complete!':'↩ Task unmarked');
+    renderTasks(); updateDashboard();
+  }
+
+  function setFilter(el, f) {
+    currentFilter = f;
+    document.querySelectorAll('#screen3 .ftab').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');
+    renderTasks();
+  }
+
+  // ── SEARCH ──
+  function doSearch(q) {
+    const resultsEl = document.getElementById('searchResults');
+    q = q.toLowerCase().trim();
+
+    if (!q) {
+      resultsEl.innerHTML = `
+        <p class="search-results-lbl" style="margin-bottom:12px">Quick Filters</p>
+        <div class="search-hint">
+          <span class="hint-chip" onclick="doSearch('urgent');document.getElementById('searchInput').value='urgent'">🔴 Urgent</span>
+          <span class="hint-chip" onclick="doSearch('soon');document.getElementById('searchInput').value='soon'">🟡 Due Soon</span>
+          <span class="hint-chip" onclick="doSearch('canvas');document.getElementById('searchInput').value='canvas'">Canvas</span>
+          <span class="hint-chip" onclick="doSearch('moodle');document.getElementById('searchInput').value='moodle'">Moodle</span>
+          <span class="hint-chip" onclick="doSearch('done');document.getElementById('searchInput').value='done'">✅ Completed</span>
+        </div>`;
+      return;
+    }
+
+    let filtered = tasks.filter(t => {
+      if (q==='urgent') return t.urgency==='red';
+      if (q==='soon')   return t.urgency==='warn';
+      if (q==='done')   return t.done;
+      return t.name.toLowerCase().includes(q) ||
+             t.course.toLowerCase().includes(q) ||
+             t.platform.toLowerCase().includes(q) ||
+             t.date.toLowerCase().includes(q);
+    });
+
+    if (filtered.length===0) {
+      resultsEl.innerHTML = `
+        <p class="search-results-lbl" style="margin-bottom:12px">Results for "${q}"</p>
+        <div class="no-results"><div class="icon">🔍</div><h4>No results found</h4><p>Try a different keyword</p></div>`;
+      return;
+    }
+
+    const accentMap   = {red:'a-red',warn:'a-warn',green:'a-grn'};
+    const platformMap = {canvas:'Canvas',moodle:'Moodle',google:'Google',notion:'Notion',default:'Other'};
+    resultsEl.innerHTML = `<p class="search-results-lbl" style="margin-bottom:12px">${filtered.length} result${filtered.length!==1?'s':''} for "${q}"</p>` +
+      filtered.map((t,i)=>`
+        <div class="task-item ${t.done?'completed':''}" style="animation-delay:${i*0.06}s">
+          <div class="item-accent ${accentMap[t.urgency]||'a-purp'}"></div>
+          <div class="task-cols">
+            <div class="col-item"><span class="col-lbl">Date</span><span class="col-val">${t.date}</span></div>
+            <div class="col-item"><span class="col-lbl">Summary</span><span class="col-val">${t.name}</span></div>
+            <div class="col-item"><span class="col-lbl">Platform</span><span class="col-val"><span class="ptag ${t.platform}">${platformMap[t.platform]||'Other'}</span></span></div>
+          </div>
+          <div class="vdiv"></div>
+          <button class="mark-btn ${t.done?'done':''}" onclick="toggleTask(${t.id}); doSearch(document.getElementById('searchInput').value)">
+            <div class="mark-ring"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="${t.done?'#22C55E':'#7C5CFC'}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3,8 6.5,11.5 13,5"/></svg></div>
+            <span class="mark-lbl">${t.done?'Done ✓':'Mark done'}</span>
+          </button>
+        </div>`).join('');
+  }
+
+  // ── CALENDAR ──
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const SHORT_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  function changeMonth(dir) {
+    calMonth += dir;
+    if (calMonth > 11) { calMonth = 0;  calYear++; }
+    if (calMonth < 0)  { calMonth = 11; calYear--; }
+    selectedCalDay = null;
+    renderCalendar();
+  }
+
+  function renderCalendar() {
+    document.getElementById('calMonthTitle').textContent = MONTHS[calMonth] + ' ' + calYear;
+    document.getElementById('calMonthLabel').textContent = SHORT_MONTHS[calMonth] + ' ' + calYear;
+
+    const firstDay  = new Date(calYear, calMonth, 1).getDay();
+    const daysInMo  = new Date(calYear, calMonth+1, 0).getDate();
+    const todayDate = new Date();
+
+    // Build task date index: "Mar 20" -> days
+    const taskDays = new Set();
+    tasks.forEach(t => {
+      const parts = t.date.split(' ');
+      if (parts.length===2 && SHORT_MONTHS.indexOf(parts[0])===calMonth) taskDays.add(parseInt(parts[1]));
+    });
+
+    let cells = '';
+    for (let i=0; i<firstDay; i++) cells += '<div class="cal-cell empty"></div>';
+    for (let d=1; d<=daysInMo; d++) {
+      const isToday   = d===todayDate.getDate() && calMonth===todayDate.getMonth() && calYear===todayDate.getFullYear();
+      const hasTask   = taskDays.has(d);
+      const isSelected= d===selectedCalDay;
+      const cls = ['cal-cell', isToday?'today':'', hasTask?'has-task':'', isSelected&&!isToday?'selected':''].filter(Boolean).join(' ');
+      cells += `<div class="${cls}" onclick="selectDay(${d})">${d}</div>`;
+    }
+    document.getElementById('calCells').innerHTML = cells;
+    renderCalTasks(selectedCalDay);
+  }
+
+  function selectDay(d) {
+    selectedCalDay = d;
+    renderCalendar();
+  }
+
+  function renderCalTasks(day) {
+    const lbl     = document.getElementById('calTasksLabel');
+    const listEl  = document.getElementById('calTaskList');
+    const dotColors = {red:'#EF4444', warn:'#F59E0B', green:'#22C55E'};
+
+    let filtered;
+    if (day) {
+      lbl.textContent = `Tasks on ${SHORT_MONTHS[calMonth]} ${day}`;
+      filtered = tasks.filter(t => {
+        const parts = t.date.split(' ');
+        return parts.length===2 && SHORT_MONTHS.indexOf(parts[0])===calMonth && parseInt(parts[1])===day;
+      });
+    } else {
+      lbl.textContent = 'Tasks this month';
+      filtered = tasks.filter(t => {
+        const parts = t.date.split(' ');
+        return parts.length===2 && SHORT_MONTHS.indexOf(parts[0])===calMonth;
+      });
+    }
+
+    if (filtered.length===0) {
+      listEl.innerHTML = `<div class="no-cal-tasks">No tasks ${day?'on this day':'this month'} 🎉</div>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(t=>`
+      <div class="cal-task-item">
+        <div class="cal-dot" style="background:${dotColors[t.urgency]||'#7C5CFC'}"></div>
+        <div class="cal-task-info">
+          <h4>${t.name}</h4>
+          <p>${t.course} · ${t.platform.charAt(0).toUpperCase()+t.platform.slice(1)}</p>
+        </div>
+        <div class="cal-task-date">${t.done?'✅':t.date}</div>
+      </div>`).join('');
+  }
+
+  // ── PROFILE ──
+  function updateProfile() {
+    document.getElementById('p-total').textContent = tasks.length;
+    document.getElementById('p-done').textContent  = tasks.filter(t=>t.done).length;
+  }
+
+  function openEditModal() {
+    document.getElementById('edit-name').value  = document.getElementById('profName').textContent;
+    document.getElementById('edit-email').value = document.getElementById('profEmail').textContent;
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
+
+  function saveProfile() {
+    const name  = document.getElementById('edit-name').value.trim();
+    const email = document.getElementById('edit-email').value.trim();
+    if (!name)  { showToast('⚠️ Name cannot be empty!'); return; }
+    if (!email) { showToast('⚠️ Email cannot be empty!'); return; }
+    document.getElementById('profName').textContent  = name;
+    document.getElementById('profEmail').textContent = email;
+    closeEditModal();
+    showToast('✅ Profile updated!');
+  }
+
+  // ── TOAST ──
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=>t.classList.remove('show'), 2400);
+  }
+
+  // ── INIT ──
+  updateDashboard();
+  renderTasks();
+  renderCalendar();
+</script>
+</body>
+</html>
